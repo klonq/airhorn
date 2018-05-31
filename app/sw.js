@@ -16,33 +16,37 @@
  *  limitations under the License
  *
  */
- 
-// Version 0.34
 
-
-importScripts('/cache-polyfill.js');
-
-self.addEventListener('install', function(e) {
+const version = "0.6.11";
+const cacheName = `airhorner-${version}`;
+self.addEventListener('install', e => {
+  const timeStamp = Date.now();
   e.waitUntil(
-    caches.open('airhorner').then(function(cache) {
+    caches.open(cacheName).then(cache => {
       return cache.addAll([
-        '/',
-        '/index.html',
-        '/index.html?homescreen=1',
-        '/?homescreen=1',
-        '/styles/main.css',
-        '/scripts/main.min.js',
-        '/sounds/airhorn.mp3'
-      ]);
+        `/`,
+        `/index.html`,
+        `/styles/main.css`,
+        `/scripts/main.min.js`,
+        `/scripts/comlink.global.js`,
+        `/scripts/messagechanneladapter.global.js`,
+        `/scripts/pwacompat.min.js`,
+        `/sounds/airhorn.mp3`
+      ])
+          .then(() => self.skipWaiting());
     })
   );
 });
 
-self.addEventListener('fetch', function(event) {
-  var url = event.request.url;
+self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim());
+});
 
+self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(function(response) {
+    caches.open(cacheName)
+      .then(cache => cache.match(event.request, {ignoreSearch: true}))
+      .then(response => {
       return response || fetch(event.request);
     })
   );

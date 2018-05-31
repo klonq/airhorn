@@ -25,7 +25,6 @@ var $ = require('gulp-load-plugins')();
 var del = require('del');
 var runSequence = require('run-sequence');
 var browserSync = require('browser-sync');
-var pagespeed = require('psi');
 var reload = browserSync.reload;
 
 // Lint JavaScript
@@ -67,18 +66,24 @@ gulp.task('copy-workerscripts', function() {
     .pipe($.size({title: 'copy-workerscripts'}));
 });
 
-// Copy image files from the Styleguide
-gulp.task('styleguide-images', function() {
-  return gulp.src('app/styleguide/**/*.{svg,png,jpg}')
-    .pipe(gulp.dest('dist/styleguide/'))
-    .pipe($.size({title: 'styleguide-images'}));
-});
-
 // Copy Web Fonts To Dist
 gulp.task('fonts', function() {
   return gulp.src(['app/fonts/**'])
     .pipe(gulp.dest('dist/fonts'))
     .pipe($.size({title: 'fonts'}));
+});
+
+// Copy Sounds To Dist
+gulp.task('sounds', function() {
+  return gulp.src(['app/sounds/**'])
+    .pipe(gulp.dest('dist/sounds'))
+    .pipe($.size({title: 'sounds'}));
+});
+
+gulp.task('well-known', function() {
+  return gulp.src(['app/.well-known/**'])
+    .pipe(gulp.dest('dist/.well-known/'))
+    .pipe($.size({title: 'well-known'}));
 });
 
 // Compile and Automatically Prefix Stylesheets
@@ -98,29 +103,23 @@ gulp.task('styles', function() {
 
   // For best performance, don't add Sass partials to `gulp.src`
   return gulp.src([
-    'app/**/*.scss',
     'app/styles/**/*.css'
   ])
-    .pipe($.changed('styles', {extension: '.scss'}))
-    .pipe($.sass({
-      precision: 10,
-      onError: console.error.bind(console, 'Sass error:')
-    }))
     .pipe($.autoprefixer(AUTOPREFIXER_BROWSERS))
-    .pipe(gulp.dest('.tmp'))
     // Concatenate And Minify Styles
     .pipe($.if('*.css', $.csso()))
-    .pipe(gulp.dest('dist'))
+    .pipe(gulp.dest('dist/styles'))
     .pipe($.size({title: 'styles'}));
 });
 
 // Concatenate And Minify JavaScript
 gulp.task('scripts', function() {
-  var sources = ['app/scripts/*.js',
-    'app/styleguide/wskComponentHandler.js', 'app/styleguide/**/*.js'];
+  var sources = [
+    'app/scripts/*.js'];
+
   return gulp.src(sources)
-    .pipe($.concat('main.min.js'))
-    .pipe($.uglify({preserveComments: 'some'}))
+    //.pipe($.concat('main.min.js'))
+    //.pipe($.uglify({preserveComments: 'some'}))
     // Output Files
     .pipe(gulp.dest('dist/scripts'))
     .pipe($.size({title: 'scripts'}));
@@ -194,19 +193,8 @@ gulp.task('serve:dist', ['default'], function() {
 
 // Build Production Files, the Default Task
 gulp.task('default', ['clean'], function(cb) {
-  runSequence('styles', ['html', 'scripts', 'images', 'styleguide-images', 'fonts', 'copy', 'copy-workerscripts'], cb);
+  runSequence('styles', ['html', 'scripts', 'styles', 'images', 'fonts', 'sounds', 'copy', 'well-known', 'copy-workerscripts'], cb);
 });
-
-// Run PageSpeed Insights
-// Update `url` below to the public URL for your site
-gulp.task('pagespeed', pagespeed.bind(null, {
-  // By default, we use the PageSpeed Insights
-  // free (no API key) tier. You can use a Google
-  // Developer API key if you have one. See
-  // http://goo.gl/RkN0vE for info key: 'YOUR_API_KEY'
-  url: 'https://example.com',
-  strategy: 'mobile'
-}));
 
 // Load custom tasks from the `tasks` directory
 // try { require('require-dir')('tasks'); } catch (err) { console.error(err); }
